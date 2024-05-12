@@ -1,0 +1,1 @@
+This is a collection of scripts i've been using to organize or make my life easier.
