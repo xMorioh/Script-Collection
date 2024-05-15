@@ -9,10 +9,13 @@ $outputPath = """A:\output.webm""" #only .webm is allowed due to VP9 encoding wh
 $targetVideoMegabytes = 50
 
 #-----Script internals-----
-$fileSizeInBits =  ($targetVideoMegabytes - 1) * 8388.608
+$targetFileSizeInKilobit =  ($targetVideoMegabytes) * 8000
 $probedFileDuration = Invoke-Expression "&'$ffprobePath' -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $inputVideo"
-$bitrate = ($fileSizeInBits / $probedFileDuration)
+[double]$probedFileAudioBitrate = Invoke-Expression "&'$ffprobePath' -v error -select_streams a -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 $inputVideo"
+
+$bitrate = ($targetFileSizeInKilobit / $probedFileDuration) - ($probedFileAudioBitrate * 0.001)
+
 Invoke-Expression "
-$ffmpegPath -i $inputVideo -c:v libvpx-vp9 -b:v $($bitrate)k -pass 1 -an -f null NUL
+$ffmpegPath -i $inputVideo -c:v libvpx-vp9 -b:v $($bitrate)k -pass 1 -an -row-mt 1 -f null NUL
 $ffmpegPath -i $inputVideo -c:v libvpx-vp9 -b:v $($bitrate)k -pass 2 -c:a libopus -row-mt 1 $outputPath
 "
