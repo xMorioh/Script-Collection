@@ -11,9 +11,9 @@ $targetVideoMegabytes = 50
 #-----Script internals-----
 $targetFileSizeInKilobit =  ($targetVideoMegabytes) * 8000
 $probedFileDuration = Invoke-Expression "&'$ffprobePath' -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $inputVideo"
-[double]$probedFileAudioBitrate = Invoke-Expression "&'$ffprobePath' -v error -select_streams a -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 $inputVideo"
-
-$bitrate = ($targetFileSizeInKilobit / $probedFileDuration) - ($probedFileAudioBitrate * 0.001)
+#[double]$probedFileAudioBitrate = Invoke-Expression "&'$ffprobePath' -v error -select_streams a -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 $inputVideo"
+#$bitrate = ($targetFileSizeInKilobit / $probedFileDuration) - ($probedFileAudioBitrate * 0.001)
+$bitrate = ($targetFileSizeInKilobit / $probedFileDuration)
 
 Invoke-Expression "
 $ffmpegPath -i $inputVideo -c:v libvpx-vp9 -b:v $($bitrate)k -pass 1 -an -row-mt 1 -f null NUL
