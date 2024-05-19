@@ -11,4 +11,6 @@ Keep in mind that this will reencode the video to VP9 to improve image quality a
 Instructions on how to set it up are written inside the powershell script.
 The .bat file is just a batch to link to your desktop so you can easily double click it without needing to open the CLI for it all the time, it is best you have a dedicated folder for it anyway since this runs ffmpeg in double pass which will create logs files.
 
+If necessary you can set the CPU priority class OS wide for ffmpeg to low, that way your OS wont hitch if it uses up all your precious CPU performance. Encoding performance should be impacted rather minimal as far as i have been testing at least.
+
 This Script requires ffmpeg as well as ffprobe, both can be found here: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
