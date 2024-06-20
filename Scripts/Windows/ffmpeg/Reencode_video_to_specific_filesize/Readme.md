@@ -21,11 +21,13 @@ Just extract both ffmpeg and ffprobe into the same folder where the .ps1 script 
 
 A good comparison from x264, x265 and libvpx-vp9 can be found here: https://blogs.gnome.org/rbultje/2015/09/28/vp9-encodingdecoding-performance-vs-hevch-264/
 
-Optionally: The Script has some parameters you can pass in the CLI with arguments like so:
-`powershell -ex bypass -file "%username%\Script-Collection\Scripts\Windows\ffmpeg\Reencode_video_to_specific_filesize\Reencode_video_to_specific_filesize.ps1",
+Optionally: The Script has some parameters you can pass in CLI with arguments like so:
+```
+powershell -ex bypass -file "%username%\Script-Collection\Scripts\Windows\ffmpeg\Reencode_video_to_specific_filesize\Reencode_video_to_specific_filesize.ps1",
 -ffmpegPath "$PSScriptRoot\ffmpeg.exe",
 -ffprobePath "$PSScriptRoot\ffprobe.exe",
 -inputVideo "A:\input.*",
 -outputPath "A:\output.mp4",
 -targetVideoSize_megabytes 100,
--encoder "libvpx-vp9"`
+-encoder "libvpx-vp9"
+```
