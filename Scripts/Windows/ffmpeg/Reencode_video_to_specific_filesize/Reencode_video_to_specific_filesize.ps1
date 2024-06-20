@@ -1,13 +1,17 @@
-﻿#-----Dependencies-----
+﻿param (
+
+#-----Dependencies-----
 # This Script requires ffmpeg as well as ffprobe, both can be found here: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
-$ffmpegPath = "$PSScriptRoot\ffmpeg.exe"
-$ffprobePath = "$PSScriptRoot\ffprobe.exe"
+[string]$ffmpegPath = "$PSScriptRoot\ffmpeg.exe",
+[string]$ffprobePath = "$PSScriptRoot\ffprobe.exe",
 
 #-----User Settings-----
-$inputVideo = "A:\input.*" #No need to specify the file extension
-$outputPath = "A:\output.mp4"
-$targetVideoSize_megabytes = 50
-$encoder = "libvpx-vp9" #Choose your prefered Encoder Library, for example x264=libx264, VP9=libvpx-vp9, AV1=libsvtav1
+[string]$inputVideo = "A:\input.*", #No need to specify the file extension
+[string]$outputPath = "A:\output.mp4",
+[int]$targetVideoSize_megabytes = 50,
+[string]$encoder = "libvpx-vp9" #Choose your prefered Encoder Library, for example x264=libx264, VP9=libvpx-vp9, AV1=libsvtav1
+
+)
 
 #-----Script internals-----
 $inputVideo = Get-ChildItem -Path $inputVideo #search for file extension via input name
