@@ -9,7 +9,7 @@
 [string]$inputVideo = "A:\input.*", #No need to specify the file extension
 [string]$outputPath = "A:\output.mp4",
 [int]$targetVideoSize_megabytes = 50,
-[string]$encoder = "libvpx-vp9" #Choose your prefered Encoder Library, for example x264=libx264, VP9=libvpx-vp9, AV1=libsvtav1
+[string]$encoder = "libvpx-vp9" #Choose your prefered Encoder Library, for example x264=libx264, VP9=libvpx-vp9, AV1=libsvtav1 | libaom-av1
 
 )
 
@@ -18,16 +18,32 @@ $inputVideo = Get-ChildItem -Path $inputVideo #search for file extension via inp
 
 $probedFileDuration = Invoke-Expression "&'$ffprobePath' -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
 
+try {
 [float]$probedFileVideoBitrate = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
+}
+catch {
+[float]$probedFileVideoBitrate = Invoke-Expression "&'$ffprobePath' -v error -show_entries format=bit_rate -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
+$targetVideoSize_megabytes = ($targetVideoSize_megabytes * 0.9)
+}
 [float]$probedFileVideoBitrate_kbit = $probedFileVideoBitrate * 0.001
 
+try {
 [float]$probedFileAudioBitrate = Invoke-Expression "&'$ffprobePath' -v error -select_streams a -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
+}
+catch {
+[float]$probedFileAudioBitrate = 0
+}
 [float]$AudioSize_megabytes = (($probedFileAudioBitrate * $probedFileDuration) / 8388608)
 
 [float]$targetFileSize_kbit =  (($targetVideoSize_megabytes - $AudioSize_megabytes - 1) * 8192)
 [float]$OutputBitrate_kbit = $targetFileSize_kbit / $probedFileDuration
 
 Write-Host "-----DEBUGGING START-----"
+Write-Host 
+if ($probedFileAudioBitrate -eq 0) {
+Write-Host "Audio is embedded in the Video Bitrate due to a format being used that does not support stream based metadata embedding"
+}
+Write-Host 
 Write-Host "probedFileDuration                    :" $probedFileDuration
 Write-Host "probedFileVideoBitrate                :" $probedFileVideoBitrate
 Write-Host "probedFileVideoBitrate_kbit           :" $probedFileVideoBitrate_kbit
