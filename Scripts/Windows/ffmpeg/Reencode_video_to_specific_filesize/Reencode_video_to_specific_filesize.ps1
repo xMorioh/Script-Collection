@@ -18,6 +18,8 @@ $inputVideo = Get-ChildItem -Path $inputVideo #search for file extension via inp
 
 $probedFileDuration = Invoke-Expression "&'$ffprobePath' -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
 
+#Try to get Video Stream bitrate, catch if containers like MKV are in use which do not support stream metadata embedding
+#To mitigate streamless container size overflow of the final size, we subtract 10% here which worked best so far.
 try {
 [float]$probedFileVideoBitrate = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
 }
@@ -27,6 +29,8 @@ $targetVideoSize_megabytes = ($targetVideoSize_megabytes * 0.9)
 }
 [float]$probedFileVideoBitrate_kbit = $probedFileVideoBitrate * 0.001
 
+#Try to get Audio Stream bitrate, catch if containers like MKV are in use which do not support stream metadata embedding
+#If Stream could not be found then Audio is embedded in the Video Stream or not present at all
 try {
 [float]$probedFileAudioBitrate = Invoke-Expression "&'$ffprobePath' -v error -select_streams a -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
 }

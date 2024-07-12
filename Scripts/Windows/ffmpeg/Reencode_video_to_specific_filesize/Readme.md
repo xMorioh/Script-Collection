@@ -23,7 +23,7 @@ A good comparison from x264, x265 and libvpx-vp9 can be found here: https://blog
 
 Optionally: The Script has some parameters you can pass in CLI with arguments like so:
 ```
-powershell -ex bypass -file "%username%\Script-Collection\Scripts\Windows\ffmpeg\Reencode_video_to_specific_filesize\Reencode_video_to_specific_filesize.ps1",
+powershell -ex bypass -file "C:\Users\$env:USERNAME\Script-Collection\Scripts\Windows\ffmpeg\Reencode_video_to_specific_filesize\Reencode_video_to_specific_filesize.ps1",
 -ffmpegPath "$PSScriptRoot\ffmpeg.exe",
 -ffprobePath "$PSScriptRoot\ffprobe.exe",
 -inputVideo "A:\input.*",
