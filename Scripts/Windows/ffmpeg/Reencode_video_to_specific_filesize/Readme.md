@@ -7,12 +7,12 @@ Usecases are:
 - reencode a video to a different format to make it be readable by applications or websites that have strict limitations or support for different video formats.
 
 
-The Format is choosable inside the script and supports every format that ffmpeg supports but keep in mind that by default this script will reencode the given video to VP9 to improve image quality at smaller file sizes, this means that you will definitely find someone on a phone or wherever who does not see the video embeded inside discord for example, you could however change that to x264 but with the definite issue of image quality being worse depending how long your videos typically are since longer videos mean less bitrate which equals to less overall quality. ffmpeg is very powerful so check the commands if you need something more specific for your usecases [here](https://ffmpeg.org/documentation.html) or [here](https://trac.ffmpeg.org/wiki#Encoding)
+The Format can be chosen inside the script and supports every format that ffmpeg supports but keep in mind that by default this script will reencode the given video to VP9 to improve image quality at smaller file sizes, this means that you will definitely find someone on a phone or wherever who does not see the video embeded inside discord for example, you could however change that to x264 but with the definite issue of image quality being worse depending how long your videos typically are since longer videos mean less bitrate which equals to less overall quality. ffmpeg is very powerful so check the commands if you need something more specific for your usecases [here](https://ffmpeg.org/documentation.html) or [here](https://trac.ffmpeg.org/wiki#Encoding)
 
 This Script also comes with some optimizations, these are optional but active by default, just delete the code block out of the script if you feel like they are unnecessary to you.
 
 Instructions on how to set it up are written inside the powershell script.
-The .bat file is just a batch to link to your desktop so you can easily double click it without needing to open the CLI for it all the time, it is best you have a dedicated folder for this script anyway since this runs ffmpeg in double pass which will create log files.
+The .bat file is just a batch to link to your desktop so you can easily double click it without needing to open the CLI for it all the time or to drag and drop a bunch of files onto it to convert a batch of videos in one go, it is best you have a dedicated folder for this script anyway since this runs ffmpeg in double pass which will create log files.
 
 If necessary you can set the CPU priority class OS wide for ffmpeg to low, that way your OS wont hitch if ffmpeg uses up all your precious CPU performance. Encoding performance should be impacted rather minimal from this as far as i have been testing at least.
 
