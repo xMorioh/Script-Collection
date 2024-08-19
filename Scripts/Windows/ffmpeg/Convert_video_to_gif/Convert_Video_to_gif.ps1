@@ -7,7 +7,8 @@
 
 #-----User Settings-----
 [string]$inputVideo = "A:\input.*", #No need to specify the file extension
-[string]$outputPath = "A:\output.gif"
+[string]$outputPath = "A:\output.gif",
+[int]$targetGIFSize_megabytes = 35
 
 )
 
@@ -19,10 +20,12 @@ $inputVideo = Get-ChildItem -Path $inputVideo #search for file extension via inp
 [int]$probedFileVideoHeight = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
 [string]$probedFileVideoFPS = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
 
-[string]$probedFileVideoWidthOptimized = $probedFileVideoWidth / 2
-[string]$probedFileVideoHeightOptimized = $probedFileVideoHeight / 2
-[string]$probedFileVideoFPSOptimized = [Data.DataTable]::New().Compute($probedFileVideoFPS, $null) / 2
+[string]$probedFileVideoWidthOptimized = $probedFileVideoWidth
+[string]$probedFileVideoHeightOptimized = $probedFileVideoHeight
+[string]$probedFileVideoFPSOptimized = [Data.DataTable]::New().Compute($probedFileVideoFPS, $null)
 #-----------------------
+for ($a=1; $a -le 2; $a++) {
+for ($i=1; $i -le 2; $i++) {
 
 Write-Host "-----DEBUGGING START-----"
 Write-Host "probedFileVideoWidth          :" $probedFileVideoWidth
@@ -40,3 +43,23 @@ Invoke-Expression "
 $ffmpegPath -v warning -i '$inputVideo' -vf '$filters,palettegen' -y $palette
 $ffmpegPath -v warning -i '$inputVideo' -i $palette -lavfi '$filters [x]; [x][1:v] paletteuse=dither=bayer:bayer_scale=3' -y '$outputPath'
 "
+
+#Write output to disk above, then check if file size is below $targetGIFSize_megabytes, if not then half FPS, if it is still not below then half the res
+$outputFile = Get-Item $outputPath
+if ($outputFile.Length -gt ($targetGIFSize_megabytes * 1000000)) {
+    [string]$probedFileVideoWidthOptimized = $probedFileVideoWidth / 2
+    [string]$probedFileVideoHeightOptimized = $probedFileVideoHeight / 2
+    }
+    else {
+        break
+    }
+}
+
+$outputFile = Get-Item $outputPath
+if ($outputFile.Length -gt ($targetGIFSize_megabytes * 1000000)) {
+    [string]$probedFileVideoFPSOptimized = [Data.DataTable]::New().Compute($probedFileVideoFPS, $null) / 2
+    }
+    else {
+        break
+    }
+}

@@ -1,5 +1,5 @@
 # Convert Video to GIF
-This script will convert a Video to a gif format
+This script will convert a Video to a gif format.
 What this will do is checking the input video, then optimizing some of it's values for the gif, pipe that to ffmpeg and dump the finished gif wherever you specify.
 
 Usecases are:

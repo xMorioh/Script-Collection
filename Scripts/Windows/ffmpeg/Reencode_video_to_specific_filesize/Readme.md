@@ -1,5 +1,5 @@
 # Reencode Video to specific Filesize
-This script will reencode a Video with the best possible quality to a specific file size
+This script will reencode a Video with the best possible quality to a specific file size.
 What this will do is checking the input video duration, then calculating the bitrate from the duration and the specified target file size, pipe that to ffmpeg and dump the finished video wherever you specify.
 
 Usecases are:
