@@ -1,5 +1,5 @@
 # Convert Video to GIF
-This script will convert a Video to a gif format.
+This script will convert a Video to a gif format, it also attempts to stay below the specified File Size by lowering the resolution by half and if that didn't get it below the filesize then it tries to half the FPS too.
 What this will do is checking the input video, then optimizing some of it's values for the gif, pipe that to ffmpeg and dump the finished gif wherever you specify.
 
 Usecases are:
@@ -23,5 +23,6 @@ powershell -ex bypass -file "C:\Users\$env:USERNAME\Script-Collection\Scripts\Wi
 -ffmpegPath "$PSScriptRoot\ffmpeg.exe",
 -ffprobePath "$PSScriptRoot\ffprobe.exe",
 -inputVideo "A:\input.*",
--outputPath "A:\output.gif"
+-outputPath "A:\output.gif",
+-targetGIFSize_megabytes 35
 ```
