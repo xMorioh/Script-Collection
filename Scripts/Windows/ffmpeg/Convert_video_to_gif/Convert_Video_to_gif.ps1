@@ -8,14 +8,13 @@
 #-----User Settings-----
 [string]$inputVideo = "A:\input.*", #No need to specify the file extension
 [string]$outputPath = "A:\output.gif",
-[int]$targetGIFSize_megabytes = 35
+[int]$targetGIFSize_megabytes = 25
 
 )
 
 #-----Script internals-----
 $inputVideo = Get-ChildItem -Path $inputVideo #search for file extension via input name
 
-#-----Optimizations-----
 [int]$probedFileVideoWidth = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=width -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
 [int]$probedFileVideoHeight = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
 [string]$probedFileVideoFPS = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
@@ -23,7 +22,11 @@ $inputVideo = Get-ChildItem -Path $inputVideo #search for file extension via inp
 [string]$probedFileVideoWidthOptimized = $probedFileVideoWidth
 [string]$probedFileVideoHeightOptimized = $probedFileVideoHeight
 [string]$probedFileVideoFPSOptimized = [Data.DataTable]::New().Compute($probedFileVideoFPS, $null)
-#-----------------------
+#this fixes an issue with encoding speed for gifs: https://web.archive.org/web/20170201034945/http://blog.fenrir-inc.com/us/2012/02/theyre-different-how-to-match-the-animation-rate-of-gif-files-accross-browsers.html
+if ($probedFileVideoFPSOptimized -gt 50) {
+$probedFileVideoFPSOptimized = 50
+}
+
 for ($a=1; $a -le 2; $a++) {
 for ($i=1; $i -le 2; $i++) {
 
