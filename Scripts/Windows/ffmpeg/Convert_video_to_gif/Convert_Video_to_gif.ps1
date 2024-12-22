@@ -8,7 +8,7 @@
 #-----User Settings-----
 [string]$inputVideo = "A:\input.*", #No need to specify the file extension
 [string]$outputPath = "A:\output.gif",
-[int]$targetGIFSize_megabytes = 25
+[int]$targetGIFSize_megabytes = 15
 
 )
 
