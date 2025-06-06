@@ -9,7 +9,7 @@
 [string]$inputVideo = "A:\input.*", #No need to specify the file extension
 [string]$outputPath = "A:\output.mp4",
 [int]$targetVideoSize_megabytes = 50,
-[string]$encoder = "libvpx-vp9" #Choose your prefered Encoder Library, for example x264=libx264, VP9=libvpx-vp9, AV1=libsvtav1 | libaom-av1
+[string]$encoder = "libvpx-vp9" #Choose your prefered Encoder Library, for example x264=libx264, VP9=libvpx-vp9, AV1=libsvtav1
 
 )
 
@@ -17,6 +17,10 @@
 $inputVideo = Get-ChildItem -Path $inputVideo #search for file extension via input name
 
 $probedFileDuration = Invoke-Expression "&'$ffprobePath' -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
+
+[string]$probedFileVideoFPS = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
+$probedFileVideoFPSConverted = [Data.DataTable]::New().Compute($probedFileVideoFPS, $null)
+$OutputFPS = $probedFileVideoFPSConverted
 
 #Try to get Video Stream bitrate, catch if containers like MKV are in use which do not support stream metadata embedding
 #To mitigate streamless container size overflow of the final size, we subtract 10% here which worked best so far.
@@ -43,17 +47,18 @@ catch {
 [float]$OutputBitrate_kbit = $targetFileSize_kbit / $probedFileDuration
 
 Write-Host "-----DEBUGGING START-----"
-Write-Host 
+Write-Host
 if ($probedFileAudioBitrate -eq 0) {
 Write-Host "Audio is embedded in the Video Bitrate due to a format being used that does not support stream based metadata embedding"
 }
-Write-Host 
+Write-Host
 Write-Host "probedFileDuration                    :" $probedFileDuration
 Write-Host "probedFileVideoBitrate                :" $probedFileVideoBitrate
 Write-Host "probedFileVideoBitrate_kbit           :" $probedFileVideoBitrate_kbit
 Write-Host "probedFileAudioBitrate                :" $probedFileAudioBitrate
 Write-Host "AudioSize_megabytes                   :" $AudioSize_megabytes
 Write-Host "targetFileSize_kbit                   :" $targetFileSize_kbit
+Write-Host "OutputFPS          before Optimization:" $OutputFPS
 Write-Host "OutputBitrate_kbit before Optimization:" $OutputBitrate_kbit
 
 #-----Optimizations-----
@@ -61,15 +66,21 @@ Write-Host "OutputBitrate_kbit before Optimization:" $OutputBitrate_kbit
     if ($OutputBitrate_kbit -gt $probedFileVideoBitrate_kbit) {
         $OutputBitrate_kbit = $probedFileVideoBitrate_kbit
     }
-    
+
+#Check if the Framerate is above 60fps, if so we limit it by halfing the fps since most monitors only support up to 60fps, 61 because fps can be 60.000001 or something like that.
+#This way can focus more of our Bitrate to each individual frame, leaving us with a better image quality overall.
+    if ($OutputFPS -gt 61) {
+        $OutputFPS = $OutputFPS / 2
+    }
+
 #--Check if we can use libx264 instead to save on encoding time if the exact same quality can be achieved in our targetVideoSize, we do not change $OutputBitrate_kbit here we still use target max kbit.
     [int]$probedFileVideoWidth = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=width -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
     [int]$probedFileVideoHeight = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
     [int]$probedFileVideoPixels = ($probedFileVideoWidth * $probedFileVideoHeight)
-    [string]$probedFileVideoFPS = Invoke-Expression "&'$ffprobePath' -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=noprint_wrappers=1:nokey=1 '$inputVideo'"
-    $probedFileVideoFPSMultiplier = [Data.DataTable]::New().Compute($probedFileVideoFPS, $null) / 30
+
+    $probedFileVideoFPSMultiplier = $OutputFPS / 30
     #Info: 0.00125 = ((((Baseline kbit (500kbit) / 1280*720 assuming the 500Kkbit are good for a 30fps video at that resolution) * 2) + 10%) to get a base quality number meaning kbit for each pixel per second @30fps
-    #*2 + 10% = x2 is for the x264 codec uplift since VP9 has around 50% better quality compared and then just 10% on top for good measure + rounding up, $probedFileVideoFPS right below here is for 30fps to 60fps when 500kbit look good at 30fps.
+    #*2 + 10% = x2 is for the x264 codec uplift since VP9/AV1 has around 50% better quality compared and then just 10% on top for good measure + rounding up, $probedFileVideoFPSMultiplier right below here is for 30fps to 60fps when 500kbit look good at 30fps.
     $x264Check_kbit = (0.00125 * $probedFileVideoFPSMultiplier) * $probedFileVideoPixels
     $x264Check_megabytes = (((($x264Check_kbit * $probedFileDuration) / 8192) + 1) + $AudioSize_megabytes)
     if ($x264Check_megabytes -lt $targetVideoSize_megabytes) {
@@ -77,16 +88,17 @@ Write-Host "OutputBitrate_kbit before Optimization:" $OutputBitrate_kbit
     }
 #--Check end
 
-#Limit kbit for user set encoder, this way we can get away with a much lower filesize in some scenarios
+#Limit kbit for user set encoder, this way we can get away with a much lower filesize in some scenarios, we only do this if the encoder is not x264 as x264 benefits much more from more Bitrate, hence the elseif
     elseif ($OutputBitrate_kbit -gt 10000) {
         $OutputBitrate_kbit = 10000
 	}
 #-----------------------
 
+Write-Host "OutputFPS          after Optimization :" $OutputFPS
 Write-Host "OutputBitrate_kbit after Optimization :" $OutputBitrate_kbit
 Write-Host "-----DEBUGGING END-----"
 
 Invoke-Expression "
-$ffmpegPath -i '$inputVideo' -c:v $encoder -b:v $($OutputBitrate_kbit)k -pass 1 -an -row-mt 1 -f null NUL
-$ffmpegPath -i '$inputVideo' -c:v $encoder -b:v $($OutputBitrate_kbit)k -pass 2 -c:a copy -row-mt 1 '$outputPath'
+$ffmpegPath -i '$inputVideo' -c:v $encoder -b:v $($OutputBitrate_kbit)k -vf fps=$OutputFPS -pass 1 -an -row-mt 1 -f null NUL
+$ffmpegPath -i '$inputVideo' -c:v $encoder -b:v $($OutputBitrate_kbit)k -vf fps=$OutputFPS -pass 2 -c:a copy -row-mt 1 '$outputPath'
 "
