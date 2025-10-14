@@ -38,55 +38,52 @@ def graph_plotting(csvFile):
                     data[column].append(row[i])
 
             #Calculate FrameTime Median and convert Values to float
-            #Offsetting by -1 to be in line with AnimationError
             FrameTime_median = 0
             headerIndex = headers.index("MsBetweenAppStart")
             for i in range(len(data[headers[headerIndex]])):
-                data[headers[headerIndex]][i-1] = float(data[headers[headerIndex]][i])
-                FrameTime_median += data[headers[headerIndex]][i-1]
+                data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
+                FrameTime_median += data[headers[headerIndex]][i]
             FrameTime_median /= len(data[headers[headerIndex]])
-
-            #Define FrameTime, conversion already done above
             FrameTime = data[headers[headerIndex]]
 
             #Define DisplayLatency and convert Values to float. MsBetweenDisplayChange can be NaN in some cases.
-            #Offsetting by -1 to be in line with AnimationError
             headerIndex = headers.index("MsBetweenDisplayChange")
             for i in range(len(data[headers[headerIndex]])):
                 if data[headers[headerIndex]][i] == 'NA':
-                    data[headers[headerIndex]][i-1] = float(0)
+                    data[headers[headerIndex]][i] = float(0)
                 else:
-                    data[headers[headerIndex]][i-1] = float(data[headers[headerIndex]][i])
+                    data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
             MsBetweenDisplayChange = data[headers[headerIndex]]
 
             #Define MsCPUBusy and convert Values to float
-            #Offsetting by -1 to be in line with AnimationError
             headerIndex = headers.index("MsCPUBusy")
             for i in range(len(data[headers[headerIndex]])):
-                data[headers[headerIndex]][i-1] = float(data[headers[headerIndex]][i])
+                data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
             MsCPUBusy = data[headers[headerIndex]]
 
             #Define MsGPUBusy and convert Values to float
-            #Offsetting by -1 to be in line with AnimationError
             headerIndex = headers.index("MsGPUBusy")
             for i in range(len(data[headers[headerIndex]])):
-                data[headers[headerIndex]][i-1] = float(data[headers[headerIndex]][i])
+                data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
             MsGPUBusy = data[headers[headerIndex]]
 
             #Define Time
-            #Offsetting by -1 to be in line with AnimationError
             headerIndex = headers.index("CPUStartDateTime")
             for i in range(len(data[headers[headerIndex]])):
-                data[headers[headerIndex]][i-1] = ((data[headers[headerIndex]][i])[11:][:11])
+                data[headers[headerIndex]][i] = ((data[headers[headerIndex]][i])[11:][:11])
             times = data[headers[headerIndex]]
 
-            #Define MsAnimationError
+            #Define MsAnimationError ground thruth value at 0 point and median
+            AnimationError_median = 0
             headerIndex = headers.index("MsAnimationError")
             for i in range(len(data[headers[headerIndex]])):
-                data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i]) + MsCPUBusy[i] # Overlay on top of CPU
+                AnimationError_median += float(data[headers[headerIndex]][i])
+                data[headers[headerIndex]][i-1] = float(data[headers[headerIndex]][i])
+            AnimationError_median /= len(data[headers[headerIndex]])
             MsAnimationError = data[headers[headerIndex]]
 
 
+            #FrameTime highest and lowest
             FTh = 0
             FTl = 255
             for i in FrameTime:
@@ -95,9 +92,29 @@ def graph_plotting(csvFile):
                 if i < FTl:
                     FTl = i
 
+            # AnimationError highest and lowest
+            AEh = 0
+            AEl = 255
+            for i in MsAnimationError:
+                if i > AEh:
+                    AEh = i
+                if i < AEl:
+                    AEl = i
+
+            # Overlay Animation Error on top of CPU
+            # We do this here to not scew the high, low and median caluclation
+            headerIndex = headers.index("MsAnimationError")
+            for i in range(len(data[headers[headerIndex]])):
+                data[headers[headerIndex]][i-1] += MsCPUBusy[i-1]
+            MsAnimationError = data[headers[headerIndex]]
+
         FTh = round(FTh,2)
         FTl = round(FTl,2)
         FrameTime_median = round(FrameTime_median,2)
+
+        AEh = round(AEh,2)
+        AEl = round(AEl,2)
+        AnimationError_median = round(AnimationError_median,2)
 
         #Visualization of the Graph
         plt.style.use("dark_background")
@@ -108,7 +125,7 @@ def graph_plotting(csvFile):
         figure = plt.figure()
         ax = figure.add_subplot()
         #ax.set_ylim([-50, 100])
-        ax.set_ylim([-FrameTime_median * 2, FrameTime_median * 4]) #Auto scale to average frametime, the above is for static y limit
+        ax.set_ylim([-FrameTime_median * 1.5, FrameTime_median * 3]) #Auto scale to average frametime, the above is for static y limit
         ax.yaxis.set_major_locator(ticker.MultipleLocator(5))
         ax.margins(0.0)
         ax.grid(visible=True, which="both", axis="y")
@@ -116,20 +133,22 @@ def graph_plotting(csvFile):
         figure.subplots_adjust(0.05, 0.05, 0.99, 0.99, 0.1, 0.1)
         ax.xaxis.set_major_locator(locator=ticker.MaxNLocator(nbins=15))
         figure.autofmt_xdate(rotation='horizontal', bottom=0.075)
+        plt.figtext(0.98, 0.1,
+                    f'Frame Rate in FPS: (Lowest: {round(1000/FTh)}), (Highest: {round(1000/FTl)}), (Median: {round(1000/FrameTime_median)})' +
+                    f'\nAnimation Error in ms: (Lowest: {AEl}), (Highest: {AEh}), (Median: {AnimationError_median})', weight='bold', ha='right')
         #ax.plot(times, list(zip(MsBetweenDisplayChange, MsCPUBusy, MsGPUBusy, MsAnimationError)), label=['DisplayLatency', 'CPUBusy', 'GPUBusy', 'AnimationError'])
 
         plot_data = [MsCPUBusy, MsGPUBusy, MsBetweenDisplayChange, MsAnimationError]
         labels =    ['CPUBusy', 'GPUBusy', 'DisplayLatency', 'AnimationError']
-        alphas =    [0.65, 0.65, 1, 1]
+        alphas =    [0.65, 0.65, 0.65, 0.65]
         colors =    ['#5057E4', '#FEFFB3', '#8DD3C7', '#FA8174']
-        linestyles = ['-', '-', '-', ':']
-        for i in range(4):
+        linestyles = ['-', '-', '-', '-']
+        for i in range(len(plot_data)):
             ax.plot(times, plot_data[i], color=colors[i], alpha=alphas[i], linestyle=linestyles[i], label=labels[i])
 
         ax.legend()
-        plt.xlabel('CPU Time\n' + 'Application: ' + str(data[headers[0]][1]) + '', weight='bold')
-        plt.ylabel(f'Frame Time in ms: (Lowest: {FTl}), (Highest: {FTh}), (Median: {FrameTime_median})' +
-                   f'\nFrame Rate in FPS: (Lowest: {round(1000/FTh)}), (Highest: {round(1000/FTl)}), (Median: {round(1000/FrameTime_median)})', weight='bold')
+        plt.xlabel('CPU Time\n' + 'Application: ' + str(data[headers[0]][1]), weight='bold')
+        plt.ylabel(f'Frame Time in ms: (Lowest: {FTl}), (Highest: {FTh}), (Median: {FrameTime_median})', weight='bold')
 
         plt.savefig((outPath))
         plt.close(figure)
