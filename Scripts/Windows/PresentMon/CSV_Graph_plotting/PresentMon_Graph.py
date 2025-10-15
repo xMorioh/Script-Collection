@@ -10,7 +10,7 @@ Input_filePath = "C:\\Utilities\\Random Stuff\\Intels PresentMon\\"
 Output_filePath = "C:\\Utilities\\Random Stuff\\Intels PresentMon\\"
 
 
-def find(pattern, path):
+def findPaths(pattern, path):
     result = []
     for root, dirs, files in os.walk(path):
         for name in files:
@@ -18,11 +18,19 @@ def find(pattern, path):
                 result.append(os.path.join(root, name))
     return result
 
+def findFile(pattern, path):
+    result = False
+    for root, dirs, files in os.walk(path):
+        for name in files:
+            if fnmatch.fnmatch(name, pattern):
+                result = True
+    return result
+
 #Data handling
 def graph_plotting(csvFile):
-    outPath = Output_filePath + os.path.basename(csvFile) + ".svg"
     while True:
-        if os.path.exists(outPath):
+        outPathTest = findFile(os.path.basename(csvFile).rstrip(".csv") + '*.svg', Output_filePath)
+        if outPathTest:
             break #Do not plot graphs for already existing files
         print("Plotting Graph for " + os.path.basename(csvFile))
         with open(csvFile, "r") as file:
@@ -121,11 +129,10 @@ def graph_plotting(csvFile):
         plt.rcParams["xtick.major.top"] = False
         plt.rcParams["xtick.minor.top"] = False
         plt.rcParams["grid.alpha"] = 0.2
-        plt.rcParams["lines.linewidth"] = 2
         figure = plt.figure()
         ax = figure.add_subplot()
-        #ax.set_ylim([-50, 100])
-        ax.set_ylim([-FrameTime_median * 1.5, FrameTime_median * 3]) #Auto scale to average frametime, the above is for static y limit
+        ax.set_ylim([-30, 60])
+        #ax.set_ylim([-FrameTime_median * 1.5, FrameTime_median * 3]) #Auto scale to average frametime, the above is for static y limit
         ax.yaxis.set_major_locator(ticker.MultipleLocator(5))
         ax.margins(0.0)
         ax.grid(visible=True, which="both", axis="y")
@@ -138,18 +145,20 @@ def graph_plotting(csvFile):
                     f'\nAnimation Error in ms: (Lowest: {AEl}), (Highest: {AEh}), (Median: {AnimationError_median})', weight='bold', ha='right')
         #ax.plot(times, list(zip(MsBetweenDisplayChange, MsCPUBusy, MsGPUBusy, MsAnimationError)), label=['DisplayLatency', 'CPUBusy', 'GPUBusy', 'AnimationError'])
 
-        plot_data = [MsCPUBusy, MsGPUBusy, MsBetweenDisplayChange, MsAnimationError]
-        labels =    ['CPUBusy', 'GPUBusy', 'DisplayLatency', 'AnimationError']
-        alphas =    [0.65, 0.65, 0.65, 0.65]
-        colors =    ['#5057E4', '#FEFFB3', '#8DD3C7', '#FA8174']
-        linestyles = ['-', '-', '-', '-']
+        plot_data =     [MsGPUBusy, MsBetweenDisplayChange, MsCPUBusy, MsAnimationError]
+        labels =        ['GPUBusy', 'DisplayLatency', 'CPUBusy', 'AnimationError']
+        alphas =        [1, 0.65, 0.65, 0.325]
+        colors =        ["#FEFFB3", '#8DD3C7', '#5057E4', '#FA8174']
+        markers =       ['', '_', '', '']
+        linewidths =    ['2', '0', '2', '2']
         for i in range(len(plot_data)):
-            ax.plot(times, plot_data[i], color=colors[i], alpha=alphas[i], linestyle=linestyles[i], label=labels[i])
+            ax.plot(times, plot_data[i], color=colors[i], alpha=alphas[i], linewidth=linewidths[i], marker=markers[i], label=labels[i])
 
         ax.legend()
         plt.xlabel('CPU Time\n' + 'Application: ' + str(data[headers[0]][1]), weight='bold')
         plt.ylabel(f'Frame Time in ms: (Lowest: {FTl}), (Highest: {FTh}), (Median: {FrameTime_median})', weight='bold')
 
+        outPath = f'{Output_filePath}{os.path.basename(csvFile).rstrip(".csv")}_{str(data[headers[0]][1]).rstrip(".exe")}.svg'
         plt.savefig((outPath))
         plt.close(figure)
         #Remove the .csv file after graph has been plotted
@@ -160,7 +169,7 @@ def run_parallel():
     pool = multiprocessing.Pool()
 
     # input list by finding all csv files in the Input path
-    csvFiles = find('*.csv', Input_filePath)
+    csvFiles = findPaths('*.csv', Input_filePath)
 
     # pool object with number of element
     pool = multiprocessing.Pool(processes=len(csvFiles))
