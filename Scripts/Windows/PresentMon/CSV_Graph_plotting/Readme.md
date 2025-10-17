@@ -3,11 +3,10 @@ With this Python Script you can plot a Graph of your PresentMon CSV Output
 <br>
 This script is multiprocessed so it will look at a given folder and check any csv inside the source folder has already been plotted and if not then it will simultaneously plot svg's for all of the csv files at the same time.
 
-The script does some conversion to overlay Animation Error data on top of the plotted CPUBusy data to visualize Animation Error better and more compact.
+The script does some conversion to overlay Animation Error data on top of the plotted FrameTime data to visualize Animation Error better and more compact.
 <br>
-**Animation Error in this graph works by looking at the divergence of CPUBusy and the Animation Error value**, the Animation Error value should either over or undershoot slightly for every record, this indicates a Display and or CPU delta on that recorded frame aka. a Animation Error, in an ideal world the Animation Error line should exactly match the CPUBusy line aka. no animation Error present at all.
-<br>
-Keep in mind that overlaying the Animation Error data on top of the CPUBusy data will slightly scew the Animation Error data visualized inside the graph, you can look at the Lowest/Highest/Median values to get a summarized ground thuth of the values or comment out the block inside the script for it to visualize Animation Error on the 0 point.
+Animation Error in this graph works by looking at the divergence of this AnimationErrors record and the average FrameTime 12 sample points before that, or better said just look if the Animation Error line shoots drasticly up or down which equals bad, the Animation Error line inside the graph is slightly scewed for the adjustment to overlay it on top of the other data, the level of inaccuracy should be extremely minimal and probably not noticeable from the ground truth, a AnimationError shoot to either upward or downward indicates a Display and or CPU delta **on that recorded frame** not on the next frame as PresentMon describes it in their documentation as this graph pulls the AnimationError values down by -1 to overlay it exactly with the corresponding frame.
+
 
 Usecases are:
 - visualizing various aspects of your game performance caption

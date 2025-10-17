@@ -63,6 +63,18 @@ def graph_plotting(csvFile):
                     data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
             MsBetweenDisplayChange = data[headers[headerIndex]]
 
+            #Define MsCPUWait and convert Values to float
+            headerIndex = headers.index("MsCPUWait")
+            for i in range(len(data[headers[headerIndex]])):
+                data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
+            MsCPUWait = data[headers[headerIndex]]
+
+            #Define MsGPUWait and convert Values to float
+            headerIndex = headers.index("MsGPUWait")
+            for i in range(len(data[headers[headerIndex]])):
+                data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
+            MsGPUWait = data[headers[headerIndex]]
+
             #Define MsCPUBusy and convert Values to float
             headerIndex = headers.index("MsCPUBusy")
             for i in range(len(data[headers[headerIndex]])):
@@ -72,7 +84,7 @@ def graph_plotting(csvFile):
             #Define MsGPUBusy and convert Values to float
             headerIndex = headers.index("MsGPUBusy")
             for i in range(len(data[headers[headerIndex]])):
-                data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
+                data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i]) #+ MsGPUWait[i] #Convert to GPUTime
             MsGPUBusy = data[headers[headerIndex]]
 
             #Define Time
@@ -100,20 +112,28 @@ def graph_plotting(csvFile):
                 if i < FTl:
                     FTl = i
 
-            # AnimationError highest and lowest
+            #AnimationError highest and lowest
             AEh = 0
             AEl = 255
             for i in MsAnimationError:
+                i = i
                 if i > AEh:
                     AEh = i
                 if i < AEl:
                     AEl = i
 
-            # Overlay Animation Error on top of CPU
-            # We do this here to not scew the high, low and median caluclation
+
+            # Overlay AnimationError on top of Graph Data
+            # Using either 1 second in the past from sample point or 12 sample points
             headerIndex = headers.index("MsAnimationError")
             for i in range(len(data[headers[headerIndex]])):
-                data[headers[headerIndex]][i-1] += MsCPUBusy[i-1]
+                #FPSFromSampledFrameTime = int(round(1000 / FrameTime[i]))
+                #PastFrameTimes = FrameTime[i-1]
+                #for j in range(FPSFromSampledFrameTime):
+                #    PastFrameTimes += FrameTime[i-j-1]
+                #PastFrameTimes /= (FPSFromSampledFrameTime + 1)
+                #data[headers[headerIndex]][i] += PastFrameTimes
+                data[headers[headerIndex]][i] += ((FrameTime[i-1] + FrameTime[i-2] + FrameTime[i-3] + FrameTime[i-4] + FrameTime[i-5] + FrameTime[i-6] + FrameTime[i-7] + FrameTime[i-8] + FrameTime[i-9] + FrameTime[i-10] + FrameTime[i-11] + FrameTime[i-12]) / 12)
             MsAnimationError = data[headers[headerIndex]]
 
         FTh = round(FTh,2)
@@ -147,7 +167,7 @@ def graph_plotting(csvFile):
 
         plot_data =     [MsGPUBusy, MsBetweenDisplayChange, MsCPUBusy, MsAnimationError]
         labels =        ['GPUBusy', 'DisplayLatency', 'CPUBusy', 'AnimationError']
-        alphas =        [1, 0.65, 0.65, 0.325]
+        alphas =        [1, 0.65, 0.5, 0.325]
         colors =        ["#FEFFB3", '#8DD3C7', '#5057E4', '#FA8174']
         markers =       ['', '_', '', '']
         linewidths =    ['2', '0', '2', '2']
