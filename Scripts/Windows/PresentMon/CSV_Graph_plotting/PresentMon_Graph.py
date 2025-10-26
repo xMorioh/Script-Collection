@@ -37,13 +37,22 @@ def graph_plotting(csvFile):
             csv_reader = csv.reader(file)
             headers = next(csv_reader)
 
+            # Create new Lists to work with for each column in the csv file
             data = {}
             for column in headers:
                 data[column] = []
 
+            # Populate each new Column/List with the csv files rows
             for row in csv_reader:
                 for i, column in enumerate(headers):
                     data[column].append(row[i])
+
+            # Remove first and last entries as the game is not in focus at that time and driver optimizations may scew the graph
+            if (len(data[column])) > 300:
+                for i, column in enumerate(headers):
+                    del data[column][:200]
+                    del data[column][(len(data[column]) - 100):len(data[column])]
+
 
             #Calculate FrameTime Median and convert Values to float
             FrameTime_median = 0
@@ -116,7 +125,6 @@ def graph_plotting(csvFile):
             AEh = 0
             AEl = 255
             for i in MsAnimationError:
-                i = i
                 if i > AEh:
                     AEh = i
                 if i < AEl:
@@ -125,6 +133,7 @@ def graph_plotting(csvFile):
 
             # Overlay AnimationError on top of Graph Data
             # Using either 1 second in the past from sample point or 12 sample points
+            # Using 12 sample points turned out to be best, generally lower counts are best but going too low is not good either
             headerIndex = headers.index("MsAnimationError")
             for i in range(len(data[headers[headerIndex]])):
                 #FPSFromSampledFrameTime = int(round(1000 / FrameTime[i]))
@@ -167,7 +176,7 @@ def graph_plotting(csvFile):
 
         plot_data =     [MsGPUBusy, MsBetweenDisplayChange, MsCPUBusy, MsAnimationError]
         labels =        ['GPUBusy', 'DisplayLatency', 'CPUBusy', 'AnimationError']
-        alphas =        [1, 0.65, 0.5, 0.325]
+        alphas =        [1, 0.65, 0.65, 0.325]
         colors =        ["#FEFFB3", '#8DD3C7', '#5057E4', '#FA8174']
         markers =       ['', '_', '', '']
         linewidths =    ['2', '0', '2', '2']
