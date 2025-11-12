@@ -16,7 +16,7 @@ You will need to download the PresentMon Application from [this](https://github.
 Python 3+ is required, then run the script in powershell or cmd like `python C:\folder\PresentMon_Graph.py` given that you have csv files from PresentMon captured with version 2.3.1 or newer in the directory where your csv files are saved in.
 
 ## Before you begin
-Regardless of anything, first you should change the `Input_filePath` and `Output_filePath` Variables inside the script to define the Input and Output Paths of your files.
+This script uses PresentMon's default GUI Capture directory as default source for csv files to handle, if you want to change this behavior then open the script and change `Input_filePath` as well as `Output_filePath` to your liking.
 
 
-Another requirement is that you execute the PresentMon application with the `--date_time` Parameter so that the csv Column `CPUStartDateTime` is populated with Date and Time values, the script does some conversion on that Column to calculate the Time axis correctly, if you don't do this then you may get wrong data outputs or even errors, also keep in mind that this is CPU-Time, not the time as on your clock or watch, PresentMon does not offer nor should it offer that. But if you'd like you can just use the Quick_Launcher option that i provide in this Github repo which will take care of that for you.
+Both the GUI version and the CLI version are supported but keep in mind that support might fail due to naming convention or data structure changes by Intel in future releases of PresentMon which requires manual fixing of this script.

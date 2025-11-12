@@ -5,9 +5,17 @@ import matplotlib.ticker as ticker
 import os, fnmatch
 import multiprocessing
 
+
 #Variables
-Input_filePath = "C:\\Utilities\\Random Stuff\\Intels PresentMon\\"
-Output_filePath = "C:\\Utilities\\Random Stuff\\Intels PresentMon\\"
+
+# Directory Example
+#Input_filePath = "C:\\Utilities\\Intels PresentMon\\"
+#Output_filePath = "C:\\Utilities\\Intels PresentMon\\"
+
+# Use PresentMon's default Capture directory
+Input_filePath = os.path.expanduser(os.getenv('USERPROFILE'))+'\\Documents\\PresentMon\\Captures\\'
+Output_filePath = Input_filePath
+UseCSVFilePathForOutput = True
 
 
 def findPaths(pattern, path):
@@ -29,9 +37,15 @@ def findFile(pattern, path):
 #Data handling
 def graph_plotting(csvFile):
     while True:
-        outPathTest = findFile(os.path.basename(csvFile).rstrip(".csv") + '*.svg', Output_filePath)
-        if outPathTest:
-            break #Do not plot graphs for already existing files
+        if UseCSVFilePathForOutput:
+            OutDir = os.path.dirname(csvFile)+'\\'
+        else:
+            OutDir = Output_filePath
+        outPathTest = findFile(os.path.basename(csvFile).rstrip(".csv") + '*.svg', OutDir)
+        nonValidCSV = 'stats' in os.path.basename(csvFile)
+        # Do not plot graphs for already existing files or for "stats" csv files that PresentMon generates
+        if outPathTest or nonValidCSV:
+            break
         print("Plotting Graph for " + os.path.basename(csvFile))
         with open(csvFile, "r") as file:
             csv_reader = csv.reader(file)
@@ -54,7 +68,7 @@ def graph_plotting(csvFile):
                     del data[column][(len(data[column]) - 100):len(data[column])]
 
 
-            #Calculate FrameTime Median and convert Values to float
+            # Calculate FrameTime Median and convert Values to float
             FrameTime_median = 0
             headerIndex = headers.index("MsBetweenAppStart")
             for i in range(len(data[headers[headerIndex]])):
@@ -63,7 +77,7 @@ def graph_plotting(csvFile):
             FrameTime_median /= len(data[headers[headerIndex]])
             FrameTime = data[headers[headerIndex]]
 
-            #Define DisplayLatency and convert Values to float. MsBetweenDisplayChange can be NaN in some cases.
+            # Define DisplayLatency and convert Values to float. MsBetweenDisplayChange can be NaN in some cases.
             headerIndex = headers.index("MsBetweenDisplayChange")
             for i in range(len(data[headers[headerIndex]])):
                 if data[headers[headerIndex]][i] == 'NA':
@@ -72,47 +86,65 @@ def graph_plotting(csvFile):
                     data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
             MsBetweenDisplayChange = data[headers[headerIndex]]
 
-            #Define MsCPUWait and convert Values to float
-            headerIndex = headers.index("MsCPUWait")
-            for i in range(len(data[headers[headerIndex]])):
-                data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
-            MsCPUWait = data[headers[headerIndex]]
+            # Define MsCPUWait and convert Values to float
+            #headerIndex = headers.index("MsCPUWait")
+            #for i in range(len(data[headers[headerIndex]])):
+            #   data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
+            #MsCPUWait = data[headers[headerIndex]]
 
-            #Define MsGPUWait and convert Values to float
-            headerIndex = headers.index("MsGPUWait")
-            for i in range(len(data[headers[headerIndex]])):
-                data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
-            MsGPUWait = data[headers[headerIndex]]
+            # Define MsGPUWait and convert Values to float
+            #headerIndex = headers.index("MsGPUWait")
+            #for i in range(len(data[headers[headerIndex]])):
+            #   data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
+            #MsGPUWait = data[headers[headerIndex]]
 
-            #Define MsCPUBusy and convert Values to float
+            # Define MsCPUBusy and convert Values to float
             headerIndex = headers.index("MsCPUBusy")
             for i in range(len(data[headers[headerIndex]])):
                 data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
             MsCPUBusy = data[headers[headerIndex]]
 
-            #Define MsGPUBusy and convert Values to float
+            # Define MsGPUBusy and convert Values to float
             headerIndex = headers.index("MsGPUBusy")
             for i in range(len(data[headers[headerIndex]])):
                 data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i]) #+ MsGPUWait[i] #Convert to GPUTime
             MsGPUBusy = data[headers[headerIndex]]
 
-            #Define Time
-            headerIndex = headers.index("CPUStartDateTime")
+            # Define Time
+            # Handle different timing conventions
+            isDateTime = True
+            xMetric = 'CPU Time in DateTime'
+            try:
+                headerIndex = headers.index("CPUStartDateTime")
+            except:
+                try:
+                    headerIndex = headers.index("CPUStartTime")
+                    isDateTime = False
+                    xMetric = 'CPU Time in seconds'
+                except:
+                    headerIndex = headers.index("CPUStartTimeInMs")
+                    isDateTime = False
+                    xMetric = 'CPU Time in ms'
             for i in range(len(data[headers[headerIndex]])):
-                data[headers[headerIndex]][i] = ((data[headers[headerIndex]][i])[11:][:11])
+                if isDateTime == True:
+                    data[headers[headerIndex]][i] = (data[headers[headerIndex]][i])[11:][:11]
+                else:
+                    data[headers[headerIndex]][i] = data[headers[headerIndex]][i]
             times = data[headers[headerIndex]]
 
-            #Define MsAnimationError ground thruth value at 0 point and median
+            # Define MsAnimationError ground thruth value at 0 point and median
+            # AnimationError can be NA in the UI version of PresentMon as it includes dropped frames by default.
             AnimationError_median = 0
             headerIndex = headers.index("MsAnimationError")
             for i in range(len(data[headers[headerIndex]])):
-                AnimationError_median += float(data[headers[headerIndex]][i])
+                if data[headers[headerIndex]][i] == 'NA':
+                    data[headers[headerIndex]][i] = float(0)
                 data[headers[headerIndex]][i-1] = float(data[headers[headerIndex]][i])
+                AnimationError_median += float(data[headers[headerIndex]][i])
             AnimationError_median /= len(data[headers[headerIndex]])
             MsAnimationError = data[headers[headerIndex]]
 
-
-            #FrameTime highest and lowest
+            # FrameTime highest and lowest
             FTh = 0
             FTl = 255
             for i in FrameTime:
@@ -121,7 +153,7 @@ def graph_plotting(csvFile):
                 if i < FTl:
                     FTl = i
 
-            #AnimationError highest and lowest
+            # AnimationError highest and lowest
             AEh = 0
             AEl = 255
             for i in MsAnimationError:
@@ -133,13 +165,13 @@ def graph_plotting(csvFile):
 
             # Overlay AnimationError on top of Graph Data
             # Using either 1 second in the past from sample point or 12 sample points
-            # Using 12 sample points turned out to be best, generally lower counts are best but going too low is not good either
+            # Using 12 sample points turned out to be most reliable, generally lower counts are best but going too low is not good either
             headerIndex = headers.index("MsAnimationError")
             for i in range(len(data[headers[headerIndex]])):
                 #FPSFromSampledFrameTime = int(round(1000 / FrameTime[i]))
                 #PastFrameTimes = FrameTime[i-1]
                 #for j in range(FPSFromSampledFrameTime):
-                #    PastFrameTimes += FrameTime[i-j-1]
+                #   PastFrameTimes += FrameTime[i-j-1]
                 #PastFrameTimes /= (FPSFromSampledFrameTime + 1)
                 #data[headers[headerIndex]][i] += PastFrameTimes
                 data[headers[headerIndex]][i] += ((FrameTime[i-1] + FrameTime[i-2] + FrameTime[i-3] + FrameTime[i-4] + FrameTime[i-5] + FrameTime[i-6] + FrameTime[i-7] + FrameTime[i-8] + FrameTime[i-9] + FrameTime[i-10] + FrameTime[i-11] + FrameTime[i-12]) / 12)
@@ -153,7 +185,7 @@ def graph_plotting(csvFile):
         AEl = round(AEl,2)
         AnimationError_median = round(AnimationError_median,2)
 
-        #Visualization of the Graph
+        # Visualization of the Graph
         plt.style.use("dark_background")
         plt.rcParams["xtick.major.top"] = False
         plt.rcParams["xtick.minor.top"] = False
@@ -184,13 +216,12 @@ def graph_plotting(csvFile):
             ax.plot(times, plot_data[i], color=colors[i], alpha=alphas[i], linewidth=linewidths[i], marker=markers[i], label=labels[i])
 
         ax.legend()
-        plt.xlabel('CPU Time\n' + 'Application: ' + str(data[headers[0]][1]), weight='bold')
+        plt.xlabel(f'{xMetric}\n' + 'Application: ' + str(data[headers[0]][1]), weight='bold')
         plt.ylabel(f'Frame Time in ms: (Lowest: {FTl}), (Highest: {FTh}), (Median: {FrameTime_median})', weight='bold')
-
-        outPath = f'{Output_filePath}{os.path.basename(csvFile).rstrip(".csv")}_{str(data[headers[0]][1]).rstrip(".exe")}.svg'
+        outPath = f'{OutDir}{os.path.basename(csvFile).rstrip(".csv")}_{str(data[headers[0]][1]).rstrip(".exe")}.svg'
         plt.savefig((outPath))
         plt.close(figure)
-        #Remove the .csv file after graph has been plotted
+        # Remove the .csv file after graph has been plotted
         #os.remove(csvFile)
 
 def run_parallel():
@@ -206,7 +237,10 @@ def run_parallel():
     # map the function to the list and pass function and input list as arguments
     pool.map(graph_plotting, csvFiles)
 
-    print(f"All Done! Output-> {Output_filePath}")
+    if UseCSVFilePathForOutput:
+        print(f"All Done! Output-> {Input_filePath}")
+    else:
+        print(f"All Done! Output-> {Output_filePath}")
 
 if __name__ == '__main__':
     run_parallel()
