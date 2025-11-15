@@ -219,36 +219,35 @@ def graph_plotting(csvFile):
     #os.remove(csvFile)
 
 def run_parallel():
-    # multiprocessing pool object
-    pool = multiprocessing.Pool()
-
     # input list by finding all csv files in the Input path
     csvFiles = findPaths('*.csv', Input_filePath)
 
-    trimmedCSVFiles = []
     # Strip csv files that aren't needed or already have been plotted
+    trimmedCSVFiles = []
     for csvFile in csvFiles:
-        #print("TEST -> " + os.path.basename(csvFile).rstrip(".csv"))
         if UseCSVFilePathForOutput:
             OutDir = os.path.dirname(csvFile)+'\\'
         else:
             OutDir = Output_filePath
         outPathTest = findFile(os.path.basename(csvFile).rstrip(".csv") + '*.svg', OutDir)
         nonValidCSV = 'stats' in os.path.basename(csvFile)
-
         if outPathTest is False and nonValidCSV is False:
             trimmedCSVFiles.append(csvFile)
 
-    # pool object with number of element
-    pool = multiprocessing.Pool(processes=len(trimmedCSVFiles))
 
-    # map the function to the list and pass function and input list as arguments
-    pool.map(graph_plotting, trimmedCSVFiles)
-
-    if UseCSVFilePathForOutput:
-        print(f"All Done! Output-> {Input_filePath}")
+    if (len(trimmedCSVFiles) > 0):
+        # pool object with number of element
+        pool = multiprocessing.Pool(processes=len(trimmedCSVFiles))
+        # map the function to the list and pass function and input list as arguments
+        pool.map(graph_plotting, trimmedCSVFiles)
+        if UseCSVFilePathForOutput:
+            print(f"All Done! Output-> {Input_filePath}")
+        else:
+            print(f"All Done! Output-> {Output_filePath}")
     else:
-        print(f"All Done! Output-> {Output_filePath}")
+        print('No new csv files have been found to plot a graph for. Make sure your input directory is set correctly\n' \
+        f'Current Input dir: {Input_filePath}')
+
 
 if __name__ == '__main__':
     run_parallel()
