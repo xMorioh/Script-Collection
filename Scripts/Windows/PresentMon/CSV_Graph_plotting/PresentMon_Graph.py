@@ -56,10 +56,17 @@ def graph_plotting(csvFile):
                 data[column].append(row[i])
 
         # Remove first and last entries as the game is not in focus at that time and driver optimizations may scew the graph
-        if (len(data[column])) > 300:
-            for i, column in enumerate(headers):
-                del data[column][:200]
-                del data[column][(len(data[column]) - 100):len(data[column])]
+        # For the GUI Version we only cut some of the beginngin as the game may have been in a Menu at that time
+        isGUICapture = "pmcap" in os.path.basename(csvFile)
+        if isGUICapture:
+            if (len(data[column])) > 100:
+                for i, column in enumerate(headers):
+                    del data[column][:100]
+        else:
+            if (len(data[column])) > 300:
+                for i, column in enumerate(headers):
+                    del data[column][:200]
+                    del data[column][(len(data[column]) - 100):len(data[column])]
 
 
         # Calculate FrameTime Median and convert Values to float
