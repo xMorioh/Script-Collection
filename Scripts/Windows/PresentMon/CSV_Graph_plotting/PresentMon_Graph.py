@@ -69,13 +69,13 @@ def graph_plotting(csvFile):
                     del data[column][(len(data[column]) - 100):len(data[column])]
 
 
-        # Calculate FrameTime Median and convert Values to float
-        FrameTime_median = 0
+        # Calculate FrameTime mean_average and convert Values to float
+        FrameTime_mean_average = 0
         headerIndex = headers.index("MsBetweenAppStart")
         for i in range(len(data[headers[headerIndex]])):
             data[headers[headerIndex]][i] = float(data[headers[headerIndex]][i])
-            FrameTime_median += data[headers[headerIndex]][i]
-        FrameTime_median /= len(data[headers[headerIndex]])
+            FrameTime_mean_average += data[headers[headerIndex]][i]
+        FrameTime_mean_average /= len(data[headers[headerIndex]])
         FrameTime = data[headers[headerIndex]]
 
         # Define DisplayLatency and convert Values to float. MsBetweenDisplayChange can be NaN in some cases.
@@ -133,16 +133,16 @@ def graph_plotting(csvFile):
                 data[headers[headerIndex]][i] = data[headers[headerIndex]][i]
         times = data[headers[headerIndex]]
 
-        # Define MsAnimationError ground thruth value at 0 point and median
+        # Define MsAnimationError ground thruth value at 0 point and mean_average
         # AnimationError can be NA in the UI version of PresentMon as it includes dropped frames by default.
-        AnimationError_median = 0
+        AnimationError_mean_average = 0
         headerIndex = headers.index("MsAnimationError")
         for i in range(len(data[headers[headerIndex]])):
             if data[headers[headerIndex]][i] == 'NA':
                 data[headers[headerIndex]][i] = float(0)
             data[headers[headerIndex]][i-1] = float(data[headers[headerIndex]][i])
-            AnimationError_median += float(data[headers[headerIndex]][i])
-        AnimationError_median /= len(data[headers[headerIndex]])
+            AnimationError_mean_average += float(data[headers[headerIndex]][i])
+        AnimationError_mean_average /= len(data[headers[headerIndex]])
         MsAnimationError = data[headers[headerIndex]]
 
         # FrameTime highest and lowest
@@ -180,11 +180,11 @@ def graph_plotting(csvFile):
 
     FTh = round(FTh,2)
     FTl = round(FTl,2)
-    FrameTime_median = round(FrameTime_median,2)
+    FrameTime_mean_average = round(FrameTime_mean_average,2)
 
     AEh = round(AEh,2)
     AEl = round(AEl,2)
-    AnimationError_median = round(AnimationError_median,2)
+    AnimationError_mean_average = round(AnimationError_mean_average,2)
 
     # Visualization of the Graph
     plt.style.use("dark_background")
@@ -194,7 +194,7 @@ def graph_plotting(csvFile):
     figure = plt.figure()
     ax = figure.add_subplot()
     ax.set_ylim([-30, 60])
-    #ax.set_ylim([-FrameTime_median * 1.5, FrameTime_median * 3]) #Auto scale to average frametime, the above is for static y limit
+    #ax.set_ylim([-FrameTime_mean_average * 1.5, FrameTime_mean_average * 3]) #Auto scale to average frametime, the above is for static y limit
     ax.yaxis.set_major_locator(ticker.MultipleLocator(5))
     ax.margins(0.0)
     ax.grid(visible=True, which="both", axis="y")
@@ -203,9 +203,19 @@ def graph_plotting(csvFile):
     ax.xaxis.set_major_locator(locator=ticker.MaxNLocator(nbins=15))
     figure.autofmt_xdate(rotation='horizontal', bottom=0.075)
     plt.figtext(0.98, 0.1,
-                f'Frame Rate in FPS: (Lowest: {round(1000/FTh)}), (Highest: {round(1000/FTl)}), (Median: {round(1000/FrameTime_median)})' +
-                f'\nAnimation Error in ms: (Lowest: {AEl}), (Highest: {AEh}), (Median: {AnimationError_median})', weight='bold', ha='right')
+                f'Frame Rate in FPS: (Lowest: {round(1000/FTh)}), (Highest: {round(1000/FTl)}), (Mean Average: {round(1000/FrameTime_mean_average)})' +
+                f'\nAnimation Error in ms: (Lowest: {AEl}), (Highest: {AEh}), (Man Average: {AnimationError_mean_average})', weight='bold', ha='right')
     #ax.plot(times, list(zip(MsBetweenDisplayChange, MsCPUBusy, MsGPUBusy, MsAnimationError)), label=['DisplayLatency', 'CPUBusy', 'GPUBusy', 'AnimationError'])
+
+    # Manually define FPS values and their corresponding frametime in ms
+    fps_values = [15, 20, 30, 40, 60, 90, 120, 144]
+    frametime_for_fps = [1000 / fps for fps in fps_values] # corresponding frametime in ms
+
+    for fps, frametime in zip(fps_values, frametime_for_fps):
+        plt.axhline(y=frametime, color='gray', linestyle='--', alpha=0.25)
+        plt.annotate(
+            f'{fps}FPS', xy=(times[-1], frametime), xytext=(-7, 0), textcoords='offset points', ha='right', color='red', zorder=5, bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.7),
+        )
 
     plot_data =     [MsGPUBusy, MsBetweenDisplayChange, MsCPUBusy, MsAnimationError]
     labels =        ['GPUBusy', 'DisplayLatency', 'CPUBusy', 'AnimationError']
@@ -218,7 +228,7 @@ def graph_plotting(csvFile):
 
     ax.legend()
     plt.xlabel(f'{xMetric}\n' + 'Application: ' + str(data[headers[0]][1]), weight='bold')
-    plt.ylabel(f'Frame Time in ms: (Lowest: {FTl}), (Highest: {FTh}), (Median: {FrameTime_median})', weight='bold')
+    plt.ylabel(f'Frame Time in ms: (Lowest: {FTl}), (Highest: {FTh}), (Mean Average: {FrameTime_mean_average})', weight='bold')
     outPath = f'{OutDir}{os.path.basename(csvFile).rstrip(".csv")}_{str(data[headers[0]][1]).rstrip(".exe")}.svg'
     plt.savefig((outPath))
     plt.close(figure)
