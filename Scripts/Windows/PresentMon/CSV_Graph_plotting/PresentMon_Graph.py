@@ -145,22 +145,22 @@ def graph_plotting(csvFile):
         AnimationError_mean_average /= len(data[headers[headerIndex]])
         MsAnimationError = data[headers[headerIndex]]
 
-        # FrameTime highest and lowest
+        # FrameTime highest and lowest (ignore 0 values)
         FTh = 0
         FTl = 255
         for i in FrameTime:
             if i > FTh:
                 FTh = i
-            if i < FTl:
+            if not i == 0 and i < FTl:
                 FTl = i
 
-        # AnimationError highest and lowest
+        # AnimationError highest and lowest (ignore 0 values)
         AEh = 0
         AEl = 255
         for i in MsAnimationError:
             if i > AEh:
                 AEh = i
-            if i < AEl:
+            if not i == 0 and i < AEl:
                 AEl = i
 
 
@@ -178,9 +178,9 @@ def graph_plotting(csvFile):
             data[headers[headerIndex]][i] += ((FrameTime[i-1] + FrameTime[i-2] + FrameTime[i-3] + FrameTime[i-4] + FrameTime[i-5] + FrameTime[i-6] + FrameTime[i-7] + FrameTime[i-8] + FrameTime[i-9] + FrameTime[i-10] + FrameTime[i-11] + FrameTime[i-12]) / 12)
         MsAnimationError = data[headers[headerIndex]]
 
-    FTh = round(FTh,2)
-    FTl = round(FTl,2)
-    FrameTime_mean_average = round(FrameTime_mean_average,2)
+    FTh = round(FTh,6)
+    FTl = round(FTl,6)
+    FrameTime_mean_average = round(FrameTime_mean_average,6)
 
     AEh = round(AEh,2)
     AEl = round(AEl,2)
@@ -204,7 +204,7 @@ def graph_plotting(csvFile):
     figure.autofmt_xdate(rotation='horizontal', bottom=0.075)
     plt.figtext(0.98, 0.1,
                 f'Frame Rate in FPS: (Lowest: {round(1000/FTh)}), (Highest: {round(1000/FTl)}), (Mean Average: {round(1000/FrameTime_mean_average)})' +
-                f'\nAnimation Error in ms: (Lowest: {AEl}), (Highest: {AEh}), (Man Average: {AnimationError_mean_average})', weight='bold', ha='right')
+                f'\nAnimation Error in ms: (Lowest: {AEl}), (Highest: {AEh}), (Mean Average: {AnimationError_mean_average})', weight='bold', ha='right')
     #ax.plot(times, list(zip(MsBetweenDisplayChange, MsCPUBusy, MsGPUBusy, MsAnimationError)), label=['DisplayLatency', 'CPUBusy', 'GPUBusy', 'AnimationError'])
 
     # Manually define FPS values and their corresponding frametime in ms
@@ -228,7 +228,7 @@ def graph_plotting(csvFile):
 
     ax.legend()
     plt.xlabel(f'{xMetric}\n' + 'Application: ' + str(data[headers[0]][1]), weight='bold')
-    plt.ylabel(f'Frame Time in ms: (Lowest: {FTl}), (Highest: {FTh}), (Mean Average: {FrameTime_mean_average})', weight='bold')
+    plt.ylabel(f'Frame Time in ms: (Lowest: {round(FTl,2)}), (Highest: {round(FTh,2)}), (Mean Average: {round(FrameTime_mean_average,2)})', weight='bold')
     outPath = f'{OutDir}{os.path.basename(csvFile).rstrip(".csv")}_{str(data[headers[0]][1]).rstrip(".exe")}.svg'
     plt.savefig((outPath))
     plt.close(figure)
